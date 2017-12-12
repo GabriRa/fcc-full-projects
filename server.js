@@ -7,10 +7,10 @@ var passport = require('passport');
 var session = require('express-session');
 
 var app = express();
-require('dotenv').load();
-require('./app/config/passport')(passport);
+require('dotenv').load(); //gets the .env file
+require('./app/config/passport')(passport); // initializate passport
 
-mongoose.connect(process.env.MONGO_URI);
+mongoose.connect(process.env.MONGO_URI); //connection with db
 mongoose.Promise = global.Promise;
 
 app.use('/controllers', express.static(process.cwd() + '/app/controllers'));
@@ -21,12 +21,12 @@ app.use(session({
 	secret: 'secretClementine',
 	resave: false,
 	saveUninitialized: true
-}));
+})); //express sessions / cookies
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-routes(app, passport);
+routes(app, passport); // implement the routes
 
 var port = process.env.PORT || 8080;
 app.listen(port,  function () {

@@ -5,6 +5,7 @@ var ClickHandler = require(path + '/app/controllers/clickHandler.server.js');
 
 module.exports = function (app, passport) {
 
+	//checks if its logged in (works as a middleware)
 	function isLoggedIn (req, res, next) {
 		if (req.isAuthenticated()) {
 			return next();
@@ -14,33 +15,37 @@ module.exports = function (app, passport) {
 	}
 
 	var clickHandler = new ClickHandler();
-
+	
+	//main
 	app.route('/')
 		.get(isLoggedIn, function (req, res) {
 			res.sendFile(path + '/public/index.html');
 		});
 
-	app.route('/login')
-		.get(function (req, res) {
-			res.sendFile(path + '/public/login.html');
-		});
-
-	app.route('/logout')
-		.get(function (req, res) {
-			req.logout();
-			res.redirect('/login');
-		});
-
+	//profile
 	app.route('/profile')
 		.get(isLoggedIn, function (req, res) {
 			res.sendFile(path + '/public/profile.html');
 		});
 
+	//api user's info
 	app.route('/api/:id')
 		.get(isLoggedIn, function (req, res) {
-			res.json(req.user.github);
+			if(req.user.twitter.username !== '') {
+				res.send(req.user.twitter);
+			} else {
+				res.send(req.user.github);
+			}
 		});
 
+	//api clicks
+	app.route('/api/:id/clicks')
+		.get(isLoggedIn, clickHandler.getClicks)
+		.post(isLoggedIn, clickHandler.addClick)
+		.delete(isLoggedIn, clickHandler.resetClicks);
+		
+		
+	//auth github
 	app.route('/auth/github')
 		.get(passport.authenticate('github'));
 
@@ -49,9 +54,30 @@ module.exports = function (app, passport) {
 			successRedirect: '/',
 			failureRedirect: '/login'
 		}));
+		
+	//auth twitter
+	app.route('/auth/twitter')
+		.get(passport.authenticate('twitter'));
+		
+	app.route('/auth/twitter/callback')
+		.get(passport.authenticate('twitter', {
+			successRedirect: '/',
+			failureRedirect: '/login'
+		}), (err, req, res) => {
+			if (err) return;
+		});
 
-	app.route('/api/:id/clicks')
-		.get(isLoggedIn, clickHandler.getClicks)
-		.post(isLoggedIn, clickHandler.addClick)
-		.delete(isLoggedIn, clickHandler.resetClicks);
+	//Login
+	app.route('/login')
+		.get(function (req, res) {
+			res.sendFile(path + '/public/login.html');
+		});
+		
+	//Logout
+	app.route('/logout')
+		.get(function (req, res) {
+			req.logout();
+			res.redirect('/login');
+		});
+		
 };
